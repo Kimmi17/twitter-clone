@@ -8,7 +8,7 @@ import {
 import DiscordProvider from "next-auth/providers/discord";
 
 import { env } from "~/env.mjs";
-import { db } from "~/server/db";
+import { prisma } from "~/server/db";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -46,7 +46,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   },
-  adapter: PrismaAdapter(db),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  adapter: PrismaAdapter(prisma),
   providers: [
     DiscordProvider({
       clientId: env.DISCORD_CLIENT_ID,
