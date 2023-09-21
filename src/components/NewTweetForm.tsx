@@ -31,6 +31,7 @@ function Form() {
     updateTextAreaSize(textArea);
     textAreaRef.current = textArea;
   }, []);
+  const trpcUtils = api.useContext();
 
   useLayoutEffect(() => {
     updateTextAreaSize(textAreaRef.current);
@@ -40,6 +41,37 @@ function Form() {
     onSuccess: (newTweet) => {
       console.log(newTweet);
       setInputValue("");
+
+      if (session.status !== "authenticated") return;
+
+      trpcUtils.tweet.infiniteFeed.setInfiniteData({}, (oldData) => {
+        // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+        if (oldData == null || oldData.pages[0] == null) return;
+
+        const newCacheTweet = {
+          ...newTweet,
+          likeCount: 0,
+          likedByMe: false,
+          user: {
+            id: session.data.user.id,
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+            name: session.data.user.name || null,
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+            image: session.data.user.image || null,
+          },
+        };
+
+        return {
+          ...oldData,
+          pages: [
+            {
+              ...oldData.pages[0],
+              tweets: [newCacheTweet, ...oldData.pages[0].tweets],
+            },
+            ...oldData.pages.slice(1),
+          ],
+        };
+      });
     },
   });
 
