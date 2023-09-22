@@ -3,10 +3,10 @@ import { inferAsyncReturnType } from "@trpc/server";
 import { z } from "zod";
 
 import {
-  createTRPCContext,
   createTRPCRouter,
-  protectedProcedure,
   publicProcedure,
+  protectedProcedure,
+  createTRPCContext,
 } from "~/server/api/trpc";
 
 export const tweetRouter = createTRPCRouter({
@@ -59,12 +59,15 @@ export const tweetRouter = createTRPCRouter({
         data: { content, userId: ctx.session.user.id },
       });
 
+      void ctx.revalidateSSG?.(`/profiles/${ctx.session.user.id}`);
+
       return tweet;
     }),
   toggleLike: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input: { id }, ctx }) => {
       const data = { tweetId: id, userId: ctx.session.user.id };
+
       const existingLike = await ctx.prisma.like.findUnique({
         where: { userId_tweetId: data },
       });
@@ -92,7 +95,6 @@ async function getInfiniteTweets({
 }) {
   const currentUserId = ctx.session?.user.id;
 
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   const data = await ctx.prisma.tweet.findMany({
     take: limit + 1,
     cursor: cursor ? { createdAt_id: cursor } : undefined,
@@ -105,7 +107,6 @@ async function getInfiniteTweets({
       _count: { select: { likes: true } },
       likes:
         currentUserId == null ? false : { where: { userId: currentUserId } },
-
       user: {
         select: { name: true, id: true, image: true },
       },
@@ -119,6 +120,7 @@ async function getInfiniteTweets({
       nextCursor = { id: nextItem.id, createdAt: nextItem.createdAt };
     }
   }
+
   return {
     tweets: data.map((tweet) => {
       return {
