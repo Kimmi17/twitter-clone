@@ -1,11 +1,11 @@
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { ProfileImage } from "./ProfileImage";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { VscHeart, VscHeartFilled } from "react-icons/vsc";
 import { IconHoverEffect } from "./IconHoverEffect";
 import { api } from "~/utils/api";
-import { LoadingSppiner } from "./LoadingSpinner";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 type Tweet = {
   id: string;
@@ -31,9 +31,8 @@ export function InfiniteTweetList({
   fetchNewTweets,
   hasMore = false,
 }: InfiniteTweetListProps) {
-  if (isLoading) return <LoadingSppiner />;
+  if (isLoading) return <LoadingSpinner />;
   if (isError) return <h1>Error...</h1>;
-  if (tweets == null) return null;
 
   if (tweets == null || tweets.length === 0) {
     return (
@@ -47,7 +46,7 @@ export function InfiniteTweetList({
         dataLength={tweets.length}
         next={fetchNewTweets}
         hasMore={hasMore}
-        loader={<LoadingSppiner />}
+        loader={<LoadingSpinner />}
       >
         {tweets.map((tweet) => {
           return <TweetCard key={tweet.id} {...tweet} />;
@@ -60,6 +59,7 @@ export function InfiniteTweetList({
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: "short",
 });
+
 function TweetCard({
   id,
   user,
@@ -98,6 +98,7 @@ function TweetCard({
           }),
         };
       };
+
       trpcUtils.tweet.infiniteFeed.setInfiniteData({}, updateData);
       trpcUtils.tweet.infiniteFeed.setInfiniteData(
         { onlyFollowing: true },
@@ -113,6 +114,7 @@ function TweetCard({
   function handleToggleLike() {
     toggleLike.mutate({ id });
   }
+
   return (
     <li className="flex gap-4 border-b px-4 py-4">
       <Link href={`/profiles/${user.id}`}>
@@ -122,11 +124,11 @@ function TweetCard({
         <div className="flex gap-1">
           <Link
             href={`/profiles/${user.id}`}
-            className="font-bold hover:underline focus-visible:underline"
+            className="font-bold outline-none hover:underline focus-visible:underline"
           >
             {user.name}
           </Link>
-          <span className="text-gray-500"></span>
+          <span className="text-gray-500">-</span>
           <span className="text-gray-500">
             {dateTimeFormatter.format(createdAt)}
           </span>
@@ -134,7 +136,7 @@ function TweetCard({
         <p className="whitespace-pre-wrap">{content}</p>
         <HeartButton
           onClick={handleToggleLike}
-          isLoading={toggleLike.isError}
+          isLoading={toggleLike.isLoading}
           likedByMe={likedByMe}
           likeCount={likeCount}
         />
@@ -149,6 +151,7 @@ type HeartButtonProps = {
   likedByMe: boolean;
   likeCount: number;
 };
+
 function HeartButton({
   isLoading,
   onClick,
@@ -166,11 +169,12 @@ function HeartButton({
       </div>
     );
   }
+
   return (
     <button
       disabled={isLoading}
       onClick={onClick}
-      className={`group flex items-center gap-1 self-start transition-colors duration-200 ${
+      className={`group -ml-2 flex items-center gap-1 self-start transition-colors duration-200 ${
         likedByMe
           ? "text-red-500"
           : "text-gray-500 hover:text-red-500 focus-visible:text-red-500"
